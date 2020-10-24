@@ -10,16 +10,17 @@
 #define T_min 0.000001
 
 
-int temp_ini, pop, max, alpha, pert, ind_ini, sucess;
+int T_ini, pop, max, alpha, pert, ind_ini, sucess;
 double coordenadas;
-int *final;
 
 typedef struct{
     int x;
     int y;
+    int id;
 }individuo;
 
 individuo *vet_ind;
+
 void parametros(int argv, char **args)
 {
     int opt;
@@ -28,16 +29,16 @@ void parametros(int argv, char **args)
         switch (opt)
         {
         case 't':
-            temp_ini = strtoul(optarg, NULL, 0); 
+            T_ini = strtoul(optarg, NULL, 0); // temperatura inicial
             break;
         case 's':
-             ind_ini= strtoul(optarg, NULL, 0);
+            ind_ini= strtoul(optarg, NULL, 0);
             break;
         case 'm':
-            max = strtoul(optarg, NULL, 0);
+            max = strtoul(optarg, NULL, 0); // tamanho da população
             break;
         case 'a':
-            alpha = strtoul(optarg, NULL, 0);
+            alpha = strtoul(optarg, NULL, 0); //numero entre 0 e 1
             break;
         case 'p':
             pop = strtoul(optarg, NULL, 0);
@@ -73,57 +74,105 @@ int distancia_total(individuo *vet_dist){
     return resultado;
 }
 
-int random_start(){
+int random_start(){ //gera o individuo inicial
     int aux, k=0;
     int flag = 0;
-    final = (int *)malloc(max *sizeof(int));
+    vet_ind = (individuo *)malloc(max *sizeof(individuo));
 
     for(int i=0; i<max; i++){
-        final[i] = -1;
+        vet_ind[i].id = -1;
     }
     while(k!= max){
         flag = 1;
         aux = rand()% max;
         for(int j=0; j<max; j++){
-            if(final[j] == aux){
+            if(vet_ind[j].id == aux){
                 flag=0;
                 break;
             }
         }
         if(flag != 0){
-            final[k] = aux;
+            vet_ind[k].id = aux;
             k++;
         }
     }
 }
 
-// void SA(temp_ini, pop, max, pert, alpha,ind_ini, sucess){
-//     int s = ind_ini;
-//     int temp = temp_ini;
-//     int itera = 0;
-//     int aux;
-//     int delta;
-//     vet_ind = (int *)malloc(sizeof(int *) * max);
-//     while(temp > T_min){
-//         while(itera< max){
-//             itera++;
-//             srand(time(NULL));
-//             aux = rand() % (max);
-//             // delta = distancia(vet_ind[aux], vet_ind[s]);
-//             // if(delta < 0){
+void geraVizinho(individuo *vet_pai){
+    int n=0, m=0, aux=0;
+    for(int i =0; i< max; i++){
+        vet_pai[i].id = vet_ind[i].id ;
+    }
+    while(n == m){
+        n = rand() % (max-1);
+        m = rand() % (max-1);
+    }
+    aux = vet_ind[n].id;
+    vet_ind[n].id = vet_ind[m].id;
+    vet_ind[m].id = aux;
+}
 
-//             // }
-//         }
-//     }
+double delta(individuo *vet_aux, int t){
+    double find=0, faux = 0;
+    double d=0;
+    find = distancia_total(vet_ind);//corresponde ao f(s')
+    faux = distancia_total(vet_aux);//corresponde ao f(s)
+    if(faux < find){
+        d = 1;
+    }else{
+        d = exp((find-faux)/t); // faz a parte do e^delta/t
+    }
+    return d;
+}
 
-// }
+void SA(){
+    double temp = T_ini;
+    double result = 0;
+    int ger_atual =0;
+    int prox_ger =0;
+    int ger=0;
+    int d_ger=0;
+    int s=0;
+    int cont = 0;
+    individuo *aux;
+    aux = (individuo *)malloc(sizeof(individuo *) * max);
+    individuo *vet_aux;
+    vet_aux = (individuo *)malloc(sizeof(individuo *) * max);
+    for(int i =0; i<max; i++){
+        vet_aux[i].id = 0;
+
+    }
+    while(temp > T_min){
+        
+        while(cont< max){// no do chines ele usa outro criterio de parada, ele usa (d_gen>0.1)
+            cont++;
+            
+            geraVizinho(vet_aux);//gera um individuo igual ao atual, mas trocando um elemento de lugar
+            s = delta(vet_aux, temp);//retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
+            if((s==1)||(s>(double)rand()/RAND_MAX)){ //esse rand retorna um numero entre 0 e 1
+                aux = vet_ind;
+                vet_ind = vet_aux; //troca s por s'
+                vet_aux = aux; 
+            }
+            ger_atual = distancia_total(vet_ind); 
+            prox_ger = ger;
+            ger = ger_atual;
+            d_ger = ger - prox_ger;
+            printf("\n %d \n", d_ger);
+        }
+        temp = alpha * temp;//diminui a temperatura
+    }
+}
 
 int main(int argv, char **argc){
     parametros(argv, argc);
+    srand(time(NULL));
     printf("\n%d\n", max);
     random_start();
+    printf("\n");
+    SA();
     for(int i=0; i< max; i++){
-        printf(" %d", final[i]);
+        printf(" %d", vet_ind[i].id);
     }
     printf("\n");
 }
