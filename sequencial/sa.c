@@ -37,7 +37,7 @@ void parametros(int argv, char **args)
             T_ini = strtoul(optarg, NULL, 0); // temperatura inicial
             break;
         case 's':
-            arq = fopen(optarg, "rt");
+            arq = fopen(optarg, "r");
             if (arq == NULL)
             {
                 printf("\nerro ao abrir arquivo\n");
@@ -47,14 +47,23 @@ void parametros(int argv, char **args)
             fgets(lixo, 200, arq);
             fgets(lixo, 200, arq);
             fgets(lixo, 200, arq);
+            fscanf(arq, "\nDIMENSION: %d\n", &max);
             fgets(lixo, 200, arq);
             fgets(lixo, 200, arq);
-            fgets(lixo, 200, arq);
-
-            for (int i = 0; i < max; i++)
+            vet_ind = (individuo *)malloc(max * sizeof(individuo));
+            int i = 0;
+            int x;
+            int y;
+            int id;
+            while (!feof(arq))
             {
-                fscanf(arq, "\n %d %d %d", &vet_ind[i].id, &vet_ind[i].x, &vet_ind[i].y);
-                printf("\n %d %d, %d", vet_ind[i].id, vet_ind[i].x, vet_ind[i].y);
+                //printf("\nentrou\n");
+                fscanf(arq, "%d %d %d", &id, &x, &y);
+                vet_ind[i].id = id;
+                vet_ind[i].x = x;
+                vet_ind[i].y = y;
+                // printf("\n %d %d, %d", vet_ind[i].id, vet_ind[i].x, vet_ind[i].y);
+                i++;
             }
             fclose(arq);
             break;
@@ -97,7 +106,6 @@ int random_start()
 { //randomiza o individuo inicial
     int aux, k = 0;
     int flag = 0;
-    int x, y;
 
     for (int i = 0; i < max; i++)
     {
@@ -107,8 +115,6 @@ int random_start()
     {
         flag = 1;
         aux = rand() % max;
-        x = rand() % 1000;
-        y = rand() % 1000;
         for (int j = 0; j < max; j++)
         {
             if (vet_ind[j].id == aux)
@@ -120,30 +126,28 @@ int random_start()
         if (flag != 0)
         {
             vet_ind[k].id = aux;
-            vet_ind[k].x = x;
-            vet_ind[k].y = y;
             k++;
         }
     }
 }
 
-void geraVizinho(individuo *vizinho)
+void geraVizinho(individuo *vet_aux)
 {
     int n = 0, m = 0;
     individuo *temp;
     temp = (individuo *)malloc(max * sizeof(individuo));
     for (int i = 0; i < max; i++)
     {
-        vizinho[i] = vet_ind[i];
+        vet_aux[i] = vet_ind[i];
     }
     while (n == m)
     {
         n = rand() % (max - 1);
         m = rand() % (max - 1);
     }
-    temp[0] = vizinho[n];
-    vizinho[n] = vizinho[m];
-    vizinho[m] = temp[0];
+    temp[0] = vet_aux[n];
+    vet_aux[n] = vet_aux[m];
+    vet_aux[m] = temp[0];
 }
 
 double delta(individuo *vet_aux, int t)
@@ -170,7 +174,7 @@ void SA()
     int ger_atual = 0;
     int prox_ger = 0;
     int ger = 0;
-    int d_ger = 0;
+    int d_ger = 1;
     int s = 0;
     int cont = 0;
     individuo *aux;
@@ -178,32 +182,33 @@ void SA()
 
     for (int i = 0; i < max; i++)
     {
-        vet_aux[i].id = 0;
+        vet_aux[i].x = 0;
+        vet_aux[i].y = 0;
     }
+    vet_aux->fitness = 0;
     while (temp > T_min)
     {
-
-        while (cont < max)
+        while (d_ger > 0.1)
         { // no do chines ele usa outro criterio de parada, ele usa (d_gen>0.1)
             cont++;
+            for (int m = 0; m < 20000; m++)
+            {
+                geraVizinho(vet_aux);     //gera um individuo igual ao atual, mas trocando um elemento de lugar
+                s = delta(vet_aux, temp); //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
+                if ((s == 1) || (s > (double)rand() / RAND_MAX))
+                { //esse rand retorna um numero entre 0 e 1
+                    aux = vet_ind;
 
-            geraVizinho(vet_aux);     //gera um individuo igual ao atual, mas trocando um elemento de lugar
-            s = delta(vet_aux, temp); //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
-            if ((s == 1) || (s > (double)rand() / RAND_MAX))
-            { //esse rand retorna um numero entre 0 e 1
-                aux->fitness = vet_ind->fitness;
-                printf("\n ind %d", vet_ind->fitness);
-                printf("\n aux %d", vet_aux->fitness);
-                vet_ind->fitness = vet_aux->fitness; //troca s por s' 
-                printf("\n ind %d", vet_ind->fitness);
-                vet_aux->fitness = aux->fitness;
+                    //troca s por s'
+                    vet_ind = vet_aux;
+
+                    vet_aux = aux;
+                }
             }
-            ger_atual = distancia_total(vet_ind);
-            printf("\natual %d \n", ger_atual);
+            ger_atual = vet_ind->fitness;
             prox_ger = ger;
             ger = ger_atual;
             d_ger = ger - prox_ger;
-            printf("\ndger %d \n", d_ger);
         }
         temp *= alpha; //diminui a temperatura
     }
@@ -213,22 +218,12 @@ int main(int argv, char **argc)
 {
     //as gerações não estão mudando
     parametros(argv, argc);
-    vet_ind = (individuo *)malloc(max * sizeof(individuo));
     vet_aux = (individuo *)malloc(max * sizeof(individuo));
     srand(time(NULL));
     random_start();
     //printf("\n");
     double result;
-    // for(int i=0; i< max; i++){
-    //     printf(" %d", vet_ind[i].id);
-    // }
     // geraVizinho(vet_aux);
-    // printf("\n");
-    // for (int i = 0; i < max; i++)
-    // {
-    //     printf(" %d", vet_ind[i].x);
-    // }
-    SA();
     // printf("\n");
     // for (int i = 0; i < max; i++)
     // {
@@ -239,5 +234,19 @@ int main(int argv, char **argc)
     // {
     //     printf(" %d", vet_aux[i].x);
     // }
+    SA();
     // printf("\n");
+    // for (int i = 0; i < max; i++)
+    // {
+    //     printf(" %d", vet_ind[i].x);
+    // }
+    // printf("\n");
+    printf("\n");
+    for (int i = 0; i < max; i++)
+    {
+        printf(" %d", vet_ind[i].id);
+    }
+    printf("\n");
+    printf("\nfitness: %d", vet_ind->fitness);
+    printf("\n");
 }
