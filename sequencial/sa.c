@@ -10,7 +10,7 @@
 #define T_min 0.000001
 #define alpha 0.9999
 
-int pop, max, pert, ind_ini, sucess;
+int max;
 double T_ini;
 double coordenadas;
 FILE *arq;
@@ -47,7 +47,8 @@ void parametros(int argv, char **args)
             fgets(lixo, 200, arq);
             fgets(lixo, 200, arq);
             fgets(lixo, 200, arq);
-            fscanf(arq, "\nDIMENSION: %d\n", &max);
+            fscanf(arq, "\nDIMENSION : %d\n", &max);
+            printf(" %d", max);
             fgets(lixo, 200, arq);
             fgets(lixo, 200, arq);
             vet_ind = (individuo *)malloc(max * sizeof(individuo));
@@ -55,15 +56,12 @@ void parametros(int argv, char **args)
             int x;
             int y;
             int id;
-            while (!feof(arq))
-            {
-                //printf("\nentrou\n");
+            for (int i=0; i<max; i++){
                 fscanf(arq, "%d %d %d", &id, &x, &y);
                 vet_ind[i].id = id;
                 vet_ind[i].x = x;
                 vet_ind[i].y = y;
                 // printf("\n %d %d, %d", vet_ind[i].id, vet_ind[i].x, vet_ind[i].y);
-                i++;
             }
             fclose(arq);
             break;
@@ -204,13 +202,16 @@ void SA()
 
                     vet_aux = aux;
                 }
+                printf(" a");
             }
             ger_atual = vet_ind->fitness;
             prox_ger = ger;
             ger = ger_atual;
             d_ger = ger - prox_ger;
+            printf(" b");
         }
         temp *= alpha; //diminui a temperatura
+        printf(" c");
     }
 }
 
