@@ -26,8 +26,7 @@ typedef struct
 
 individuo *vet_ind;
 individuo *vet_aux;
-
-struct timespec ts;
+individuo *aux;
 
 void parametros(int argv, char **args)
 {
@@ -97,40 +96,49 @@ int distancia_total(individuo *vet_dist)
     double resultado = 0;
     for (int i = 0; i < max - 1; i++)
     {
+        //printf(" id1: %d, id2: %d ", vet_dist[i].id, vet_dist[i+1].id);
         resultado += calcula_dist(vet_dist[i].x, vet_dist[i + 1].x, vet_dist[i].y, vet_dist[i + 1].y);
+        //printf(" %f \n", resultado);
     }
-    //printf(" %f \n", resultado);
+
     return resultado;
 }
 
 int random_start()
 { //randomiza o individuo inicial
+    struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
     /* using nano-seconds instead of seconds */
+
     srand((time_t)ts.tv_nsec);
-    int aux, k = 0;
+    int k = 0;
+    int rd = 0;
     int flag = 0;
+
+    //printf("AAAAAAAAAA %d", aux[0].id );
+    // printf("\n");
 
     for (int i = 0; i < max; i++)
     {
         vet_ind[i].id = -1;
     }
-    while (k != max)
+    while (k != (max)|| flag == 0)
     {
         flag = 1;
-        aux = rand() % max;
+        rd = rand() % (max);
         for (int j = 0; j < max; j++)
         {
-            if (vet_ind[j].id == aux)
+            if (vet_ind[j].id == aux[rd].id)
             {
                 flag = 0;
+                
                 break;
             }
         }
         if (flag != 0)
         {
-            vet_ind[k].id = aux;
+            vet_ind[k] = aux[rd];
             k++;
         }
     }
@@ -138,6 +146,7 @@ int random_start()
 
 void geraVizinho(individuo *vet_aux)
 {
+    struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
     /* using nano-seconds instead of seconds */
@@ -163,15 +172,15 @@ double delta(individuo *vet_aux, int t)
 {
     double find = 0, faux = 0;
     double d = 0;
-    vet_ind->fitness = distancia_total(vet_ind); //corresponde ao f(s')
-    vet_aux->fitness = distancia_total(vet_aux); //corresponde ao f(s)
-    if ((vet_aux->fitness - vet_ind->fitness)<= 0)
+    vet_ind->fitness = distancia_total(vet_ind); //corresponde ao f(s)
+    vet_aux->fitness = distancia_total(vet_aux); //corresponde ao f(si)
+    if ((vet_aux->fitness - vet_ind->fitness) <= 0)
     {
         d = 1.0;
     }
     else
     {
-        d = exp(-(vet_ind->fitness - vet_aux->fitness) / t); // faz a parte do e^delta/t
+        d = exp((vet_ind->fitness - vet_aux->fitness) / t); // faz a parte do e^delta/t
     }
     return d;
 }
@@ -182,8 +191,8 @@ void SA()
     int ger_atual = 0;
     int prox_ger = 0;
     int ger = 0;
-    int d_ger = 1;
-    double s = 0;
+    double d_ger = 1;
+
     individuo *aux;
     aux = (individuo *)malloc(max * sizeof(individuo));
     individuo *melhor;
@@ -194,47 +203,58 @@ void SA()
         vet_aux[i].x = 0;
         vet_aux[i].y = 0;
     }
+    vet_ind->fitness = 0;
     vet_aux->fitness = 0;
     while (temp > T_min)
     {
-        while (d_ger > 0.1)
-        {
-            // for (int m = 0; m < 20000; m++)
-            // {
-                geraVizinho(vet_aux);     //gera um individuo igual ao atual, mas trocando um elemento de lugar
-                s = delta(vet_aux, temp); //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
-                //printf(" %f", s);
-                if ((s == 1.0) || (s > (double)rand() / (double)RAND_MAX))
-                { //esse rand retorna um numero entre 0 e 1
-                    //printf(" entrou");
-                    aux = vet_ind;
+        // printf("\n iteraçãotemp %f", temp);
+    while (d_ger > 0.1)
+    {
+    //         printf("\n iteraçãoger %f", d_ger);
+    // for (int m = 0; m < 20000; m++)
+    // {
+    double s = 0;
+    geraVizinho(vet_aux);     //gera um individuo igual ao atual, mas trocando um elemento de lugar
+    s = delta(vet_aux, temp); //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
+    //printf(" %f", s);
+    if ((s == 1.0) || (s > (double)rand() / (double)RAND_MAX))
+    { //esse rand retorna um numero entre 0 e 1
+        //printf(" entrou");
+        aux = vet_ind;
 
-                    //troca s por s'
-                    vet_ind = vet_aux;
+        //troca s por s'
+        vet_ind = vet_aux;
 
-                    vet_aux = aux;
-                    // if(vet_ind->fitness < melhor->fitness){
-                    //     melhor = vet_ind;
-                    // }
-                }
-            //}
-            ger_atual = vet_ind->fitness;
-            prox_ger = ger;
-            ger = ger_atual;
-            d_ger = ger - prox_ger;
+        vet_aux = aux;
+        if(vet_ind->fitness < melhor->fitness){
+            melhor = vet_ind;
+        //}
         }
-        temp *= alpha; //diminui a temperatura
+        }
+        ger_atual = vet_ind->fitness;
+        prox_ger = ger;
+        ger = ger_atual;
+        d_ger = ger - prox_ger;
     }
-    printf("\nfitness: %d", ger);
+    temp *= alpha; //diminui a temperatura
+    }
 }
 
 int main(int argv, char **argc)
 {
     parametros(argv, argc);
     vet_aux = (individuo *)malloc(max * sizeof(individuo));
+    aux = (individuo *)malloc(max * sizeof(individuo));
+    memcpy(aux, vet_ind, max* sizeof(individuo));
     random_start();
-    SA();
+    // printf("\n");
+    // for (int i = 0; i < max - 1; i++)
+    // {
+    //     printf(" %d", vet_ind[i].id);
+    // }
     printf("\n");
+    //SA();
+
     printf("\nfitness: %d", vet_ind->fitness);
 
     printf("\n");
