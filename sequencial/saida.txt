@@ -1,5 +1,4 @@
-fitness: 34576023
+real	16m49,155s
+user	16m48,188s
+sys	0m0,848s
 
-real    18m17,200s
-user    18m16,084s
-sys     0m0,981s

@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <sys/time.h>
+#include <time.h>
 #include <mpi.h>
 #define T_min 0.000001
 #define alpha 0.9999
@@ -56,7 +57,8 @@ void parametros(int argv, char **args)
             int x;
             int y;
             int id;
-            for (int i=0; i<max; i++){
+            for (int i = 0; i < max; i++)
+            {
                 //printf("\nentrou\n");
                 fscanf(arq, "%d %d %d", &id, &x, &y);
                 vet_ind[i].id = id;
@@ -102,6 +104,12 @@ int distancia_total(individuo *vet_dist)
 
 int random_start()
 { //randomiza o individuo inicial
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    /* using nano-seconds instead of seconds */
+    srand((time_t)ts.tv_nsec);
+    //srand(1);
     int aux, k = 0;
     int flag = 0;
 
@@ -156,7 +164,7 @@ double delta(individuo *vet_aux, int t)
     vet_aux->fitness = distancia_total(vet_aux); //corresponde ao f(s)
     if (vet_aux->fitness < vet_ind->fitness)
     {
-        d = 1;
+        d = 1.0;
     }
     else
     {
@@ -168,15 +176,16 @@ double delta(individuo *vet_aux, int t)
 int main(int argv, char **argc)
 {
     parametros(argv, argc);
-    srand(time(NULL));
-    random_start();
-    vet_aux = (individuo *)malloc(max * sizeof(individuo));
+
     MPI_Init(NULL, NULL);
+    vet_aux = (individuo *)malloc(max * sizeof(individuo));
     int world_size;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
     int world_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    random_start();
 
     double temp = T_ini;
     double result = 0;
@@ -184,8 +193,7 @@ int main(int argv, char **argc)
     int prox_ger = 0;
     int ger = 0;
     int d_ger = 1;
-    int s = 0;
-    int cont = 0;
+    float s = 0.0;
     individuo *aux;
     aux = (individuo *)malloc(max * sizeof(individuo));
     for (int i = 0; i < max; i++)
@@ -197,14 +205,15 @@ int main(int argv, char **argc)
     MPI_Barrier(MPI_COMM_WORLD);
     while (temp > T_min)
     {
+        printf("a");
         while (d_ger > 0.1)
-        { // no do chines ele usa outro criterio de parada, ele usa (d_gen>0.1)
-            cont++;
-            for (int m = 0; m < 20000/world_size; m++)
+        {
+            printf("b");
+            for (int m = 0; m < 20000 / world_size; m++)
             {
                 geraVizinho(vet_aux);     //gera um individuo igual ao atual, mas trocando um elemento de lugar
                 s = delta(vet_aux, temp); //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
-                if ((s == 1) || (s > (double)rand() / RAND_MAX))
+                if ((s == 1.0) || (s > (double)rand() / RAND_MAX))
                 { //esse rand retorna um numero entre 0 e 1
                     aux = vet_ind;
 
@@ -215,24 +224,23 @@ int main(int argv, char **argc)
                 }
             }
             ger_atual = vet_ind->fitness;
-            if(world_rank == 0)
+            if (world_rank == 0)
                 prox_ger = ger;
-            MPI_Barrier(MPI_COMM_WORLD);
-            MPI_Reduce(&ger_atual,&ger,1,MPI_DOUBLE,MPI_MIN,0,MPI_COMM_WORLD);
+            MPI_Reduce(&ger_atual, &ger, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
             if(world_rank == 0)
                 d_ger = ger - prox_ger;
             MPI_Bcast(&d_ger,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+            //d_ger = ger - prox_ger;
         }
         temp *= alpha; //diminui a temperatura
     }
-    MPI_Finalize();
+    MPI_Reduce(&ger_atual, &ger, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
 
-    printf("\n");
-    for (int i = 0; i < max; i++)
+    if (world_rank == 0)
     {
-        printf(" %d", vet_ind[i].id);
+        printf("\nfitness: %d", ger);
+        printf("\n");
     }
-    printf("\n");
-    printf("\nfitness: %d", vet_ind->fitness);
-    printf("\n");
+    
+    MPI_Finalize();
 }
