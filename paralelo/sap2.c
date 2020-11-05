@@ -135,6 +135,12 @@ int random_start()
             k++;
         }
     }
+    printf("\n");
+    for (int i = 0; i < max; i++)
+    {
+        printf(" %d", vet_ind[i].id);
+    }
+    printf("\n");
 }
 
 void geraVizinho(individuo *vet_aux)
@@ -187,60 +193,60 @@ int main(int argv, char **argc)
 
     random_start();
 
-    double temp = T_ini;
-    double result = 0;
-    int ger_atual = 0;
-    int prox_ger = 0;
-    int ger = 0;
-    int d_ger = 1;
-    float s = 0.0;
-    individuo *aux;
-    aux = (individuo *)malloc(max * sizeof(individuo));
-    for (int i = 0; i < max; i++)
-    {
-        vet_aux[i].x = 0;
-        vet_aux[i].y = 0;
-    }
-    vet_aux->fitness = 0;
-    MPI_Barrier(MPI_COMM_WORLD);
-    while (temp > T_min)
-    {
-        printf("a");
-        while (d_ger > 0.1)
-        {
-            printf("b");
-            for (int m = 0; m < 20000 / world_size; m++)
-            {
-                geraVizinho(vet_aux);     //gera um individuo igual ao atual, mas trocando um elemento de lugar
-                s = delta(vet_aux, temp); //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
-                if ((s == 1.0) || (s > (double)rand() / RAND_MAX))
-                { //esse rand retorna um numero entre 0 e 1
-                    aux = vet_ind;
+    // double temp = T_ini;
+    // double result = 0;
+    // int ger_atual = 0;
+    // int prox_ger = 0;
+    // int ger = 0;
+    // int d_ger = 1;
+    // float s = 0.0;
+    // individuo *aux;
+    // aux = (individuo *)malloc(max * sizeof(individuo));
+    // for (int i = 0; i < max; i++)
+    // {
+    //     vet_aux[i].x = 0;
+    //     vet_aux[i].y = 0;
+    // }
+    // vet_aux->fitness = 0;
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // while (temp > T_min)
+    // {
+    //     printf("a");
+    //     while (d_ger > 0.1)
+    //     {
+    //         printf("b");
+    //         for (int m = 0; m < 20000 / world_size; m++)
+    //         {
+    //             geraVizinho(vet_aux);     //gera um individuo igual ao atual, mas trocando um elemento de lugar
+    //             s = delta(vet_aux, temp); //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
+    //             if ((s == 1.0) || (s > (double)rand() / RAND_MAX))
+    //             { //esse rand retorna um numero entre 0 e 1
+    //                 aux = vet_ind;
 
-                    //troca s por s'
-                    vet_ind = vet_aux;
+    //                 //troca s por s'
+    //                 vet_ind = vet_aux;
 
-                    vet_aux = aux;
-                }
-            }
-            ger_atual = vet_ind->fitness;
-            if (world_rank == 0)
-                prox_ger = ger;
-            MPI_Reduce(&ger_atual, &ger, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
-            if(world_rank == 0)
-                d_ger = ger - prox_ger;
-            MPI_Bcast(&d_ger,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-            //d_ger = ger - prox_ger;
-        }
-        temp *= alpha; //diminui a temperatura
-    }
-    MPI_Reduce(&ger_atual, &ger, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    //                 vet_aux = aux;
+    //             }
+    //         }
+    //         ger_atual = vet_ind->fitness;
+    //         if (world_rank == 0)
+    //             prox_ger = ger;
+    //         MPI_Reduce(&ger_atual, &ger, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+    //         if (world_rank == 0)
+    //             d_ger = ger - prox_ger;
+    //         MPI_Bcast(&d_ger, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    //         //d_ger = ger - prox_ger;
+    //     }
+    //     temp *= alpha; //diminui a temperatura
+    // }
+    // MPI_Reduce(&ger_atual, &ger, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
 
-    if (world_rank == 0)
-    {
-        printf("\nfitness: %d", ger);
-        printf("\n");
-    }
-    
+    // if (world_rank == 0)
+    // {
+    //     printf("\nfitness: %d", ger);
+    //     printf("\n");
+    // }
+
     MPI_Finalize();
 }

@@ -8,7 +8,8 @@
 #include <getopt.h>
 #include <sys/time.h>
 #include <time.h>
-#define T_min 0.000001
+#include <float.h>
+#define T_min 0.00001
 #define alpha 0.9999
 
 int max;
@@ -25,8 +26,8 @@ typedef struct
 } individuo;
 
 individuo *vet_ind;
-individuo *vet_aux;
-individuo *aux;
+
+int *melhorCaminho;
 
 void parametros(int argv, char **args)
 {
@@ -53,6 +54,7 @@ void parametros(int argv, char **args)
             fgets(lixo, 200, arq);
             fgets(lixo, 200, arq);
             vet_ind = (individuo *)malloc(max * sizeof(individuo));
+            melhorCaminho = (int *)malloc(max * sizeof(int));
             int i = 0;
             int x;
             int y;
@@ -60,6 +62,7 @@ void parametros(int argv, char **args)
             for (int i = 0; i < max; i++)
             {
                 fscanf(arq, "%d %d %d", &id, &x, &y);
+                melhorCaminho[i] = id;
                 vet_ind[i].id = id;
                 vet_ind[i].x = x;
                 vet_ind[i].y = y;
@@ -86,99 +89,127 @@ void parametros(int argv, char **args)
 
 double calcula_dist(int x0, int x1, int y0, int y1)
 {
-    double distancia;
-    distancia = sqrt(pow((x1 - x0), 2) + pow((y1 - y0), 2));
-    return distancia;
+    double valor;
+    valor = sqrt(pow((x1 - x0), 2) + pow((y1 - y0), 2));
+    return valor;
 }
 
-double distancia_total(individuo *vet_dist)
+double distancia_total(individuo *vet_dist, int *caminho)
 {
     double resultado = 0;
-    for (int i = 0; i < max; i++)
+    for (int i = 0; i < max - 1; i++)
     {
-        resultado += calcula_dist(vet_dist[i].x, vet_dist[i + 1].x, vet_dist[i].y, vet_dist[i + 1].y);
+        resultado += calcula_dist(vet_dist[caminho[i]].x, vet_dist[caminho[i + 1]].x, vet_dist[caminho[i]].y, vet_dist[caminho[i + 1]].y);
     }
 
-    return resultado;
+    return resultado + calcula_dist(vet_dist[0].x, vet_dist[max - 1].x, vet_dist[0].y, vet_dist[max - 1].y);
 }
 
-void random_start()
-{ //randomiza o individuo inicial
+// void *random_start()
+// { //randomiza o individuo inicial
+//     struct timespec ts;
+//     clock_gettime(CLOCK_MONOTONIC, &ts);
+
+//     /* using nano-seconds instead of seconds */
+
+//     srand((time_t)ts.tv_nsec);
+//     int k = 0;
+//     int rd = 0;
+//     int flag = 0;
+
+//     //printf("AAAAAAAAAA %d", aux[0].id );
+//     // printf("\n");
+
+//     for (int i = 0; i < max; i++)
+//     {
+//         vet_ind[i].id = -1;
+//     }
+//     while (k != (max) || flag == 0)
+//     {
+//         flag = 1;
+//         rd = rand() % (max);
+//         for (int j = 0; j < max; j++)
+//         {
+//             if (vet_ind[j].id == aux[rd].id)
+//             {
+//                 flag = 0;
+
+//                 break;
+//             }
+//         }
+//         if (flag != 0)
+//         {
+//             vet_ind[k] = aux[rd];
+//             k++;
+//         }
+//     }
+// }
+
+void *geraVizinho(int *caminhoAtual, int *proxCaminho)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    srand((time_t)ts.tv_nsec);
+    int aux = 0;
+    for (int i = 0; i < max; i++)
+    {
+        proxCaminho[i] = caminhoAtual[i];
+    }
+
+    int n = (rand() % (max - 1)) + 1;
+    int m = (rand() % (max - 1)) + 1;
+
+    aux = proxCaminho[n];
+    proxCaminho[n] = proxCaminho[m];
+    proxCaminho[m] = aux;
+}
+
+int *vizinhoProximo()
+{
+    int *caminho;
+    int *visitado;
+    double menorDist;
+    int maisProx;
+    int comeco;
+    double distancia = 0;
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
     /* using nano-seconds instead of seconds */
 
     srand((time_t)ts.tv_nsec);
-    int k = 0;
-    int rd = 0;
-    int flag = 0;
 
-    //printf("AAAAAAAAAA %d", aux[0].id );
-    // printf("\n");
-
+    caminho = (int *)malloc(max * sizeof(int));
+    visitado = (int *)malloc(max * sizeof(int));
     for (int i = 0; i < max; i++)
     {
-        vet_ind[i].id = -1;
+        visitado[i] = 0;
     }
-    while (k != (max)|| flag == 0)
+    comeco = rand() % max;
+    visitado[comeco] = 1;
+    caminho[0] = comeco;
+
+    for (int i = 1; i < max; i++)
     {
-        flag = 1;
-        rd = rand() % (max);
+        menorDist = DBL_MAX;
+
+        maisProx = 0;
         for (int j = 0; j < max; j++)
         {
-            if (vet_ind[j].id == aux[rd].id)
+            distancia = calcula_dist(vet_ind[caminho[i - 1]].x, vet_ind[j].x, vet_ind[caminho[i - 1]].y, vet_ind[j].y);
+            if (!visitado[j] && distancia < menorDist)
             {
-                flag = 0;
-                
-                break;
+                menorDist = distancia;
+                maisProx = j;
             }
         }
-        if (flag != 0)
-        {
-            vet_ind[k] = aux[rd];
-            k++;
-        }
+        caminho[i] = maisProx;
+        visitado[maisProx] = 1;
     }
-}
 
-void geraVizinho(individuo *vet_aux)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    /* using nano-seconds instead of seconds */
-    srand((time_t)ts.tv_nsec);
-    int n = 0;
-    int m = 0;
-    individuo *temp;
-    temp = (individuo *)malloc(max * sizeof(individuo));
-    memcpy(vet_aux, vet_ind, max* sizeof(individuo));
-    while (n == m)
-    {
-        n = rand() % (max - 1);
-        m = rand() % (max - 1);
-    }
-    temp[0] = vet_aux[n];
-    vet_aux[n] = vet_aux[m];
-    vet_aux[m] = temp[0];
-}
-
-double delta(individuo *vet_aux, int t)
-{
-    double find = 0, faux = 0;
-    double d = 0;
-    vet_ind->fitness = distancia_total(vet_ind); //corresponde ao f(s)
-    vet_aux->fitness = distancia_total(vet_aux); //corresponde ao f(si)
-    if (vet_aux->fitness < vet_ind->fitness)
-    {
-        d = 1.0;
-    }
-    else
-    {
-        d = exp((vet_ind->fitness - vet_aux->fitness) / t); // faz a parte do e^delta/t
-    }
-    return d;
+    free(visitado);
+    return caminho;
 }
 
 void SA()
@@ -188,66 +219,66 @@ void SA()
     int prox_ger = 0;
     int ger = 0;
     double d_ger = 1;
-    int cont =0;
+    int cont = 0;
+    double dist = 0;
+    double delta = 0;
+    int *caminhoAtual;
+    int *proxCaminho;
+    caminhoAtual = vizinhoProximo();
+    proxCaminho = (int *)malloc(max * sizeof(int));
+    dist = distancia_total(vet_ind, caminhoAtual);
 
-    individuo *copia;
-    copia = (individuo *)malloc(max * sizeof(individuo));
-    individuo *melhor;
-    melhor = (individuo *)malloc(max * sizeof(individuo));
+    while (cont < 10)
+    {
 
-    for (int i = 0; i < max; i++)
-    {
-        vet_aux[i].x = 0;
-        vet_aux[i].y = 0;
-    }
-    vet_ind->fitness = 0;
-    vet_aux->fitness = 0;
-    while (temp > T_min)
-    {
-            // printf("\n iteraçãotemp %f", temp);
-        while (cont < 10)
-        {
-            cont++;
+        cont++;
+        //int cont = 0;
+        // printf("\n iteraçãotemp %f", temp);
+        // while (cont < 1)
+        // {
+
         //         printf("\n iteraçãoger %f", d_ger);
-            for (int m = 0; m < 200; m++)
+
+        geraVizinho(caminhoAtual, proxCaminho);               //gera um individuo igual ao atual, mas trocando um elemento de lugar
+        delta = distancia_total(vet_ind, proxCaminho) - dist; //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
+        //printf(" %f", delta);
+        if (((delta < 0) || (dist > 0)) && ((exp((-delta) / temp)) > (double)rand() / RAND_MAX))
+        { //esse rand retorna um numero entre 0 e 1
+
+            for (int i = 0; i < max; i++)
             {
-                double s = 0;
-                geraVizinho(vet_aux);     //gera um individuo igual ao atual, mas trocando um elemento de lugar
-                s = delta(vet_aux, temp); //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
-                if ((s == 1.0) || (s > (double)rand() / (double)RAND_MAX))
-                { //esse rand retorna um numero entre 0 e 1
-                    //printf(" entrou");
-                    //copia = vet_ind;
-                    memcpy(copia, vet_ind, max* sizeof(individuo));
-
-                    //troca s por s'
-                    memcpy(vet_ind, vet_aux, max* sizeof(individuo));
-
-                    //vet_aux = copia;
-                    memcpy(vet_aux, copia, max* sizeof(individuo));
-                    // if(vet_ind->fitness < melhor->fitness){
-                    //     melhor = vet_ind;
-                    //}
-                    ger_atual = vet_ind->fitness;
-                    prox_ger = ger;
-                    ger = ger_atual;
-                    d_ger = ger - prox_ger;
+                caminhoAtual[i] = proxCaminho[i];
+            }
+            if (distancia_total(vet_ind, melhorCaminho) > distancia_total(vet_ind, caminhoAtual))
+            {
+                for (int i = 0; i < max; i++)
+                {
+                    melhorCaminho[i] = caminhoAtual[i];
                 }
             }
-        }       
+            dist += delta;
+        }
+        //     cont++;
+        // }
+
         temp *= alpha; //diminui a temperatura
     }
+    printf("\n%f", distancia_total(vet_ind, caminhoAtual));
+    printf("\nmelhor %f", distancia_total(vet_ind, melhorCaminho));
+
+    // if (distancia_total(vet_ind, melhorCaminho) > distancia_total(vet_ind, caminhoAtual))
+    // {
+    //     for (int i = 0; i < max; i++)
+    //     {
+    //         melhorCaminho[i] = caminhoAtual[i];
+    //     }
+    // }
 }
 
 int main(int argv, char **argc)
 {
     parametros(argv, argc);
-    vet_aux = (individuo *)malloc(max * sizeof(individuo));
-    aux = (individuo *)malloc(max * sizeof(individuo));
-    memcpy(aux, vet_ind, max* sizeof(individuo));
     //random_start();
-    double dis = distancia_total(vet_ind);
-    printf("\n dis %f \n", dis);
     // printf("\n");
     // for (int i = 0; i < max - 1; i++)
     // {
@@ -255,7 +286,7 @@ int main(int argv, char **argc)
     // }
     printf("\n");
     SA();
-    printf("\nfitness: %d", vet_ind->fitness);
+    printf("\nfitness: %f", distancia_total(vet_ind, melhorCaminho));
 
     printf("\n");
 }
