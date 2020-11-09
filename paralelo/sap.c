@@ -213,12 +213,13 @@ int main(int argv, char **argc)
 
     t1 = MPI_Wtime();
     h1 = now();
-    temp = T_ini/world_size;
+    temp = T_ini/world_size; //conferir 
     while (temp > T_min)
     {
         
         //geraVizinho(caminhoAtual, proxCaminho); //gera um individuo igual ao atual, mas trocando um elemento de lugar
         caminhoo = geraVizinho(caminhoAtual);
+        // nao estou atualizando o caminho atual, vai gerar o vizinho co  caminho atual que nunca atualizo
         dist = distancia_total(vet_ind, caminhoAtual);
 
         vizinho = distancia_total(vet_ind, caminhoo);
@@ -229,22 +230,25 @@ int main(int argv, char **argc)
         { //esse rand retorna um numero entre 0 e 1
             printf("\nentrou");
             atual = vizinho;
+            caminhoAtual = caminhoo;
             if (best > atual)
             {
                 best = atual;
             }
-            t3 = MPI_Wtime();
-            h3 = now();
             
-            h4 = now();
-            t4 = MPI_Wtime();
+            // h3 = now();
+            
+            // h4 = now();
+            
             
         }
-        MPI_Allreduce(&best, &top, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+        t3 = MPI_Wtime();
+        MPI_Allreduce(&best, &top, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD); // talvez fazer com caminho
+        t4 = MPI_Wtime();
         best = top;
         // if (world_rank == 0)
         // {
-            temp *= alpha; //diminui a temperatura
+        temp *= alpha; //diminui a temperatura
         //     printf("\ntemp: %Lf", temp);
         // }
         // t5 = MPI_Wtime();
@@ -255,6 +259,9 @@ int main(int argv, char **argc)
         // h6 = now();
         // t6 = MPI_Wtime();
     }
+    //colocar uma barreira p esperra todos e se for o processo mastar só ele printa. Sincronizar aqui
+    // só printar o tempo no processo master
+    //arrumar tempo tbm
     t2 = MPI_Wtime();
     h2 = now();
     printf("\np= %d", world_rank);
@@ -263,7 +270,8 @@ int main(int argv, char **argc)
     comm = (t4 - t3) + (t6 - t5);
     double now = (h4 - h3) + (h6 - h5);
     printf("\nfitness: %f", best);
-    printf("\ntime: %f", (t2 - t1) - comm);
+    //ver se o processo é o master pra printar
+    printf("\ntime: %f", (t2 - t1)- (t4-t3));
     //printf("\ntempovini: %f", (h2 - h1)-now);
     //}
     MPI_Finalize();
