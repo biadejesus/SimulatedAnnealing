@@ -105,52 +105,15 @@ double distancia_total(individuo *vet_dist, int *caminho)
     return resultado + calcula_dist(vet_dist[0].x, vet_dist[max - 1].x, vet_dist[0].y, vet_dist[max - 1].y);
 }
 
-// void *random_start()
-// { //randomiza o individuo inicial
-//     struct timespec ts;
-//     clock_gettime(CLOCK_MONOTONIC, &ts);
-
-//     /* using nano-seconds instead of seconds */
-
-//     srand((time_t)ts.tv_nsec);
-//     int k = 0;
-//     int rd = 0;
-//     int flag = 0;
-
-//     //printf("AAAAAAAAAA %d", aux[0].id );
-//     // printf("\n");
-
-//     for (int i = 0; i < max; i++)
-//     {
-//         vet_ind[i].id = -1;
-//     }
-//     while (k != (max) || flag == 0)
-//     {
-//         flag = 1;
-//         rd = rand() % (max);
-//         for (int j = 0; j < max; j++)
-//         {
-//             if (vet_ind[j].id == aux[rd].id)
-//             {
-//                 flag = 0;
-
-//                 break;
-//             }
-//         }
-//         if (flag != 0)
-//         {
-//             vet_ind[k] = aux[rd];
-//             k++;
-//         }
-//     }
-// }
-
-void *geraVizinho(int *caminhoAtual, int *proxCaminho)
+int *geraVizinho(int *caminhoAtual)
 {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
     srand((time_t)ts.tv_nsec);
+    int *proxCaminho;
+
+    proxCaminho = (int *)malloc(max * sizeof(int));
     int aux = 0;
     for (int i = 0; i < max; i++)
     {
@@ -163,6 +126,8 @@ void *geraVizinho(int *caminhoAtual, int *proxCaminho)
     aux = proxCaminho[n];
     proxCaminho[n] = proxCaminho[m];
     proxCaminho[m] = aux;
+
+    return proxCaminho;
 }
 
 int *vizinhoProximo()
@@ -212,81 +177,63 @@ int *vizinhoProximo()
     return caminho;
 }
 
-void SA()
+double SA()
 {
     double temp = T_ini;
-    int ger_atual = 0;
-    int prox_ger = 0;
-    int ger = 0;
-    double d_ger = 1;
     int cont = 0;
     double dist = 0;
     double delta = 0;
+    double best =0;
+    double vizinho = 0;
+    double atual =0;
     int *caminhoAtual;
-    int *proxCaminho;
+    int *proximoCaminho;
     caminhoAtual = vizinhoProximo();
-    proxCaminho = (int *)malloc(max * sizeof(int));
-    dist = distancia_total(vet_ind, caminhoAtual);
+    proximoCaminho = (int *)malloc(max * sizeof(int));
+    best = distancia_total(vet_ind, melhorCaminho);
+    atual = distancia_total(vet_ind, caminhoAtual);
 
-    while (cont < 10)
+    while (temp > T_min)
     {
 
-        cont++;
-        //int cont = 0;
-        // printf("\n iteraçãotemp %f", temp);
-        // while (cont < 1)
-        // {
+        proximoCaminho = geraVizinho(caminhoAtual);               //gera um individuo igual ao atual, mas trocando um elemento de lugar
+        dist = distancia_total(vet_ind, caminhoAtual);
+        vizinho = distancia_total(vet_ind, proximoCaminho);
 
-        //         printf("\n iteraçãoger %f", d_ger);
-
-        geraVizinho(caminhoAtual, proxCaminho);               //gera um individuo igual ao atual, mas trocando um elemento de lugar
-        delta = distancia_total(vet_ind, proxCaminho) - dist; //retorna 1 se f(s')<f(s) e retorna (e^delta/t) senão
-        //printf(" %f", delta);
-        if (((delta < 0) || (dist > 0)) && ((exp((-delta) / temp)) > (double)rand() / RAND_MAX))
+        delta = vizinho - dist; // f(s')<f(s)
+        if ((delta < 0) || ((exp((-delta) / temp)) > (double)rand() / RAND_MAX))
         { //esse rand retorna um numero entre 0 e 1
-
-            for (int i = 0; i < max; i++)
+            printf("\nentrou");
+            atual = vizinho;
+            if (best > atual)
             {
-                caminhoAtual[i] = proxCaminho[i];
+                best = atual;
             }
-            if (distancia_total(vet_ind, melhorCaminho) > distancia_total(vet_ind, caminhoAtual))
-            {
-                for (int i = 0; i < max; i++)
-                {
-                    melhorCaminho[i] = caminhoAtual[i];
-                }
-            }
-            dist += delta;
         }
-        //     cont++;
-        // }
-
         temp *= alpha; //diminui a temperatura
     }
-    printf("\n%f", distancia_total(vet_ind, caminhoAtual));
-    printf("\nmelhor %f", distancia_total(vet_ind, melhorCaminho));
+    return best;
+}
 
-    // if (distancia_total(vet_ind, melhorCaminho) > distancia_total(vet_ind, caminhoAtual))
-    // {
-    //     for (int i = 0; i < max; i++)
-    //     {
-    //         melhorCaminho[i] = caminhoAtual[i];
-    //     }
-    // }
+double now()
+{
+    const double ONE_BILLION = 1000000000.0;
+    struct timespec current_time;
+
+    clock_gettime(CLOCK_REALTIME, &current_time);
+
+    return current_time.tv_sec + (current_time.tv_nsec / ONE_BILLION);
 }
 
 int main(int argv, char **argc)
 {
+    double top = 0;
     parametros(argv, argc);
-    //random_start();
-    // printf("\n");
-    // for (int i = 0; i < max - 1; i++)
-    // {
-    //     printf(" %d", vet_ind[i].id);
-    // }
-    printf("\n");
-    SA();
-    printf("\nfitness: %f", distancia_total(vet_ind, melhorCaminho));
-
+    double t1 = 0, t2 = 0;
+    t1 = now();
+    top = SA();
+    t2 = now();
+    printf("\nfitness: %f", top);
+    printf("\ntempo: %f", (t2 - t1));
     printf("\n");
 }
