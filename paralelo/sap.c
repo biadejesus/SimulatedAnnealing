@@ -106,7 +106,7 @@ double distancia_total(individuo *vet_dist, int *cidade)
     return resultado + calcula_dist(vet_dist[0].x, vet_dist[max - 1].x, vet_dist[0].y, vet_dist[max - 1].y);
 }
 
-int *geraVizinho2(int *caminhoAtual)
+int *geraVizinho(int *caminhoAtual)
 {
     int *proxCaminho;
 
@@ -201,7 +201,7 @@ int main(int argv, char **argc)
     caminhoo = (int *)malloc(max * sizeof(int));
 
     MPI_Init(&argv, &argc);
-    dist = distancia_total(vet_ind, caminhoAtual);
+    
     best = distancia_total(vet_ind, melhorCaminho);
     atual = distancia_total(vet_ind, caminhoAtual);
 
@@ -218,14 +218,12 @@ int main(int argv, char **argc)
     {
         
         //geraVizinho(caminhoAtual, proxCaminho); //gera um individuo igual ao atual, mas trocando um elemento de lugar
-        caminhoo = geraVizinho2(caminhoAtual);
-        // printf("\ndist: %f", distancia_total(vet_ind, caminhoAtual));
-        //printf("\ndist2: %f", dist);
+        caminhoo = geraVizinho(caminhoAtual);
+        dist = distancia_total(vet_ind, caminhoAtual);
+
         vizinho = distancia_total(vet_ind, caminhoo);
-        // printf("\nviz: %f", distancia_total(vet_ind, caminhoo));
-        // printf("\nviz2: %f", vizinho);
+
         delta = vizinho - dist; // f(s')<f(s)
-        //printf("\ndelta: %f", distancia_total(vet_ind, caminhoo) - distancia_total(vet_ind, caminhoAtual));
 
         if ((delta < 0) || ((exp((-delta) / temp)) > (double)rand() / RAND_MAX))
         { //esse rand retorna um numero entre 0 e 1
