@@ -10,11 +10,10 @@
 #include <time.h>
 #include <float.h>
 #define T_min 0.00001
-#define alpha 0.9999
+#define alpha 0.99
 
 int max;
 double T_ini;
-double coordenadas;
 FILE *arq;
 
 typedef struct
@@ -22,24 +21,24 @@ typedef struct
     int x;
     int y;
     int id;
-    int fitness;
 } individuo;
 
 individuo *vet_ind;
 
 int *melhorCaminho;
+struct timespec ts;
 
 void parametros(int argv, char **args)
 {
     int opt;
-    while ((opt = getopt(argv, args, "t:s:m:h")) != -1)
+    while ((opt = getopt(argv, args, "t:a:h")) != -1)
     {
         switch (opt)
         {
         case 't':
             T_ini = strtoul(optarg, NULL, 0); // temperatura inicial
             break;
-        case 's':
+        case 'a':
             arq = fopen(optarg, "r");
             if (arq == NULL)
             {
@@ -69,9 +68,6 @@ void parametros(int argv, char **args)
                 // printf("\n %d %d, %d", vet_ind[i].id, vet_ind[i].x, vet_ind[i].y);
             }
             fclose(arq);
-            break;
-        case 'm':
-            max = strtoul(optarg, NULL, 0); // tamanho da população
             break;
         case 'h':
             printf("\n---Ajuda---\n");
@@ -107,10 +103,7 @@ double distancia_total(individuo *vet_dist, int *caminho)
 
 int *geraVizinho(int *caminhoAtual)
 {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    srand((time_t)ts.tv_nsec);
+    
     int *proxCaminho;
 
     proxCaminho = (int *)malloc(max * sizeof(int));
@@ -138,12 +131,6 @@ int *vizinhoProximo()
     int maisProx;
     int comeco;
     double distancia = 0;
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    /* using nano-seconds instead of seconds */
-
-    srand((time_t)ts.tv_nsec);
 
     caminho = (int *)malloc(max * sizeof(int));
     visitado = (int *)malloc(max * sizeof(int));
@@ -180,38 +167,38 @@ int *vizinhoProximo()
 double SA()
 {
     double temp = T_ini;
-    int cont = 0;
-    double dist = 0;
     double delta = 0;
-    double best =0;
+    double best = 0;
     double vizinho = 0;
-    double atual =0;
+    double atual = 0;
     int *caminhoAtual;
     int *proximoCaminho;
     caminhoAtual = vizinhoProximo();
     proximoCaminho = (int *)malloc(max * sizeof(int));
     best = distancia_total(vet_ind, melhorCaminho);
-    atual = distancia_total(vet_ind, caminhoAtual);
-
-    while (temp > T_min)
+    int i = 0;
+    do
     {
+        for (i = 0; i < 100; i++)
+        {
+            proximoCaminho = geraVizinho(caminhoAtual); //gera um individuo igual ao atual, mas trocando um elemento de lugar
+            atual = distancia_total(vet_ind, caminhoAtual);
+            vizinho = distancia_total(vet_ind, proximoCaminho);
 
-        proximoCaminho = geraVizinho(caminhoAtual);               //gera um individuo igual ao atual, mas trocando um elemento de lugar
-        dist = distancia_total(vet_ind, caminhoAtual);
-        vizinho = distancia_total(vet_ind, proximoCaminho);
-
-        delta = vizinho - dist; // f(s')<f(s)
-        if ((delta < 0) || ((exp((-delta) / temp)) > (double)rand() / RAND_MAX))
-        { //esse rand retorna um numero entre 0 e 1
-            printf("\nentrou");
-            atual = vizinho;
-            if (best > atual)
-            {
-                best = atual;
+            delta = vizinho - atual; // f(s')<f(s)
+            if ((delta < 0) || ((exp((-delta) / temp)) > (double)rand() / RAND_MAX))
+            { //esse rand retorna um numero entre 0 e 1
+                atual = vizinho;
+                caminhoAtual = proximoCaminho;
+                if (best > atual)
+                {
+                    best = atual;
+                }
             }
         }
         temp *= alpha; //diminui a temperatura
-    }
+    } while (temp > T_min);
+
     return best;
 }
 
@@ -227,6 +214,9 @@ double now()
 
 int main(int argv, char **argc)
 {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    srand((time_t)ts.tv_nsec);
     double top = 0;
     parametros(argv, argc);
     double t1 = 0, t2 = 0;
