@@ -1,0 +1,123 @@
+@ mpiP
+@ Command : ./sap.out -t 1000 -a nrw1379.tsp 
+@ Version                  : 3.5.0
+@ MPIP Build date          : Nov  9 2020, 22:58:55
+@ Start time               : 2020 11 11 16:55:52
+@ Stop time                : 2020 11 11 16:56:05
+@ Timer Used               : PMPI_Wtime
+@ MPIP env var             : [null]
+@ Collector Rank           : 0
+@ Collector PID            : 2459
+@ Final Output Dir         : .
+@ Report generation        : Single collector task
+@ MPI Task Assignment      : 0 ubuntu
+@ MPI Task Assignment      : 1 ubuntu
+@ MPI Task Assignment      : 2 ubuntu
+@ MPI Task Assignment      : 3 ubuntu
+
+---------------------------------------------------------------------------
+@--- MPI Time (seconds) ---------------------------------------------------
+---------------------------------------------------------------------------
+Task    AppTime    MPITime     MPI%
+   0         13     0.0391     0.30
+   1         13     0.0254     0.20
+   2         13     0.0467     0.36
+   3         13     0.0606     0.47
+   *       51.9      0.172     0.33
+---------------------------------------------------------------------------
+@--- Callsites: 12 --------------------------------------------------------
+---------------------------------------------------------------------------
+ ID Lev File/Address        Line Parent_Funct             MPI_Call
+  1   0 0x7f8387895f3d           [unknown]                Barrier
+  2   0 0x7f8387895f3d           [unknown]                Barrier
+  3   0 0x7f8387895872           [unknown]                Allreduce
+  4   0 0x7f8f48f85f3d           [unknown]                Barrier
+  5   0 0x7f8f48f85f3d           [unknown]                Barrier
+  6   0 0x7f8f48f85872           [unknown]                Allreduce
+  7   0 0x7f87cf983f3d           [unknown]                Barrier
+  8   0 0x7f87cf983f3d           [unknown]                Barrier
+  9   0 0x7f87cf983872           [unknown]                Allreduce
+ 10   0 0x7f0595c41f3d           [unknown]                Barrier
+ 11   0 0x7f0595c41f3d           [unknown]                Barrier
+ 12   0 0x7f0595c41872           [unknown]                Allreduce
+---------------------------------------------------------------------------
+@--- Aggregate Time (top twenty, descending, milliseconds) ----------------
+---------------------------------------------------------------------------
+Call                 Site       Time    App%    MPI%      Count    COV
+Allreduce              12       58.2    0.11   33.84       1833   0.00
+Allreduce               9       44.4    0.09   25.83       1833   0.00
+Allreduce               3       38.6    0.07   22.48       1833   0.00
+Allreduce               6         25    0.05   14.54       1833   0.00
+Barrier                11       2.45    0.00    1.42          1   0.00
+Barrier                 8       2.32    0.00    1.35          1   0.00
+Barrier                 2      0.466    0.00    0.27          1   0.00
+Barrier                 5      0.392    0.00    0.23          1   0.00
+Barrier                 4     0.0185    0.00    0.01          1   0.00
+Barrier                10     0.0182    0.00    0.01          1   0.00
+Barrier                 1     0.0166    0.00    0.01          1   0.00
+Barrier                 7     0.0157    0.00    0.01          1   0.00
+---------------------------------------------------------------------------
+@--- Aggregate Sent Message Size (top twenty, descending, bytes) ----------
+---------------------------------------------------------------------------
+Call                 Site      Count      Total       Avrg  Sent%
+Allreduce               3       1833   1.47e+04          8  25.00
+Allreduce               6       1833   1.47e+04          8  25.00
+Allreduce               9       1833   1.47e+04          8  25.00
+Allreduce              12       1833   1.47e+04          8  25.00
+---------------------------------------------------------------------------
+@--- Callsite Time statistics (all, milliseconds): 12 ---------------------
+---------------------------------------------------------------------------
+Name              Site Rank  Count      Max     Mean      Min   App%   MPI%
+Allreduce            3    0   1833      1.2   0.0211  0.00558   0.30  98.77
+Allreduce            3    *   1833      1.2   0.0211  0.00558   0.07  22.48
+
+Allreduce            6    1   1833      1.2   0.0136  0.00568   0.19  98.38
+Allreduce            6    *   1833      1.2   0.0136  0.00568   0.05  14.54
+
+Allreduce            9    2   1833     3.82   0.0242  0.00564   0.34  95.00
+Allreduce            9    *   1833     3.82   0.0242  0.00564   0.09  25.83
+
+Allreduce           12    3   1833     3.89   0.0317  0.00695   0.45  95.93
+Allreduce           12    *   1833     3.89   0.0317  0.00695   0.11  33.84
+
+Barrier              1    0      1   0.0166   0.0166   0.0166   0.00   0.04
+Barrier              1    *      1   0.0166   0.0166   0.0166   0.00   0.01
+
+Barrier              2    0      1    0.466    0.466    0.466   0.00   1.19
+Barrier              2    *      1    0.466    0.466    0.466   0.00   0.27
+
+Barrier              4    1      1   0.0185   0.0185   0.0185   0.00   0.07
+Barrier              4    *      1   0.0185   0.0185   0.0185   0.00   0.01
+
+Barrier              5    1      1    0.392    0.392    0.392   0.00   1.54
+Barrier              5    *      1    0.392    0.392    0.392   0.00   0.23
+
+Barrier              7    2      1   0.0157   0.0157   0.0157   0.00   0.03
+Barrier              7    *      1   0.0157   0.0157   0.0157   0.00   0.01
+
+Barrier              8    2      1     2.32     2.32     2.32   0.02   4.96
+Barrier              8    *      1     2.32     2.32     2.32   0.00   1.35
+
+Barrier             10    3      1   0.0182   0.0182   0.0182   0.00   0.03
+Barrier             10    *      1   0.0182   0.0182   0.0182   0.00   0.01
+
+Barrier             11    3      1     2.45     2.45     2.45   0.02   4.04
+Barrier             11    *      1     2.45     2.45     2.45   0.00   1.42
+---------------------------------------------------------------------------
+@--- Callsite Message Sent statistics (all, sent bytes) -------------------
+---------------------------------------------------------------------------
+Name              Site Rank   Count       Max      Mean       Min       Sum
+Allreduce            3    0    1833         8         8         8 1.466e+04
+Allreduce            3    *    1833         8         8         8 1.466e+04
+
+Allreduce            6    1    1833         8         8         8 1.466e+04
+Allreduce            6    *    1833         8         8         8 1.466e+04
+
+Allreduce            9    2    1833         8         8         8 1.466e+04
+Allreduce            9    *    1833         8         8         8 1.466e+04
+
+Allreduce           12    3    1833         8         8         8 1.466e+04
+Allreduce           12    *    1833         8         8         8 1.466e+04
+---------------------------------------------------------------------------
+@--- End of Report --------------------------------------------------------
+---------------------------------------------------------------------------
