@@ -12,7 +12,7 @@
 #include <mpi.h>
 
 #define T_min 0.00001
-#define alpha 0.9999
+#define alpha 0.99
 
 int max;
 double T_ini;
@@ -34,14 +34,14 @@ struct timespec ts;
 void parametros(int argv, char **args)
 {
     int opt;
-    while ((opt = getopt(argv, args, "t:s:m:h")) != -1)
+    while ((opt = getopt(argv, args, "t:a:h")) != -1)
     {
         switch (opt)
         {
         case 't':
             T_ini = strtoul(optarg, NULL, 0); // temperatura inicial
             break;
-        case 's':
+        case 'a':
             arq = fopen(optarg, "r");
             if (arq == NULL)
             {
@@ -70,9 +70,6 @@ void parametros(int argv, char **args)
                 vet_ind[i].y = y;
             }
             fclose(arq);
-            break;
-        case 'm':
-            max = strtoul(optarg, NULL, 0); // tamanho da população
             break;
         case 'h':
             printf("\n---Ajuda---\n");
@@ -177,7 +174,6 @@ double now()
 
     return current_time.tv_sec + (current_time.tv_nsec / ONE_BILLION);
 }
-int i = 100;
 
 int main(int argv, char **argc)
 {
@@ -195,84 +191,63 @@ int main(int argv, char **argc)
     int *caminhoAtual;
 
     int *caminhoo;
-    double t1, t2, t3, t4, t5, t6, comm, h1, h2, h3, h4, h5, h6;
+    double t1, t2, t3, t4;
     caminhoAtual = vizinhoProximo();
 
     caminhoo = (int *)malloc(max * sizeof(int));
-
+    t1 = now();
     MPI_Init(&argv, &argc);
-    
+
     best = distancia_total(vet_ind, melhorCaminho);
-    atual = distancia_total(vet_ind, caminhoAtual);
 
     int world_size;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    
+
     int world_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    t1 = MPI_Wtime();
-    h1 = now();
-    temp = T_ini/world_size; //conferir 
-    while (temp > T_min)
+    
+    int i = 0;
+    temp = T_ini;
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    do
     {
-        
-        //geraVizinho(caminhoAtual, proxCaminho); //gera um individuo igual ao atual, mas trocando um elemento de lugar
-        caminhoo = geraVizinho(caminhoAtual);
-        // nao estou atualizando o caminho atual, vai gerar o vizinho co  caminho atual que nunca atualizo
-        dist = distancia_total(vet_ind, caminhoAtual);
+        for (i = 0; i < 100 / world_size; i++)
+        {
+            caminhoo = geraVizinho(caminhoAtual);
+            // nao estou atualizando o caminho atual, vai gerar o vizinho co  caminho atual que nunca atualizo
+            atual = distancia_total(vet_ind, caminhoAtual);
 
-        vizinho = distancia_total(vet_ind, caminhoo);
+            vizinho = distancia_total(vet_ind, caminhoo);
 
-        delta = vizinho - dist; // f(s')<f(s)
+            delta = vizinho - atual; // f(s')<f(s)
 
-        if ((delta < 0) || ((exp((-delta) / temp)) > (double)rand() / RAND_MAX))
-        { //esse rand retorna um numero entre 0 e 1
-            printf("\nentrou");
-            atual = vizinho;
-            caminhoAtual = caminhoo;
-            if (best > atual)
-            {
-                best = atual;
+            if ((delta < 0) || ((exp((-delta) / temp)) > (double)rand() / RAND_MAX))
+            { //esse rand retorna um numero entre 0 e 1
+                atual = vizinho;
+                caminhoAtual = caminhoo;
+                if (best > atual)
+                {
+                    best = atual;
+                }
             }
-            
-            // h3 = now();
-            
-            // h4 = now();
-            
-            
         }
-        t3 = MPI_Wtime();
+        t3 = now();
         MPI_Allreduce(&best, &top, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD); // talvez fazer com caminho
-        t4 = MPI_Wtime();
+        t4 = now();
         best = top;
-        // if (world_rank == 0)
-        // {
+
         temp *= alpha; //diminui a temperatura
-        //     printf("\ntemp: %Lf", temp);
-        // }
-        // t5 = MPI_Wtime();
-        // h5 = now();
-            i--;
-        //}
-        //MPI_Bcast(&temp, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        // h6 = now();
-        // t6 = MPI_Wtime();
+    } while (temp > T_min);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    t2 = now();
+    if (world_rank == 0)
+    {
+        printf("\nfitness: %f", best);
+        printf("\ntime: %f", (t2 - t1) - (t4 - t3));
     }
-    //colocar uma barreira p esperra todos e se for o processo mastar só ele printa. Sincronizar aqui
-    // só printar o tempo no processo master
-    //arrumar tempo tbm
-    t2 = MPI_Wtime();
-    h2 = now();
-    printf("\np= %d", world_rank);
-    // if (world_rank == 0)
-    // {
-    comm = (t4 - t3) + (t6 - t5);
-    double now = (h4 - h3) + (h6 - h5);
-    printf("\nfitness: %f", best);
-    //ver se o processo é o master pra printar
-    printf("\ntime: %f", (t2 - t1)- (t4-t3));
-    //printf("\ntempovini: %f", (h2 - h1)-now);
-    //}
+
     MPI_Finalize();
 }
