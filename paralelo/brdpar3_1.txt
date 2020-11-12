@@ -1,8 +1,0 @@
-mpiP: 
-mpiP: mpiP V3.5.0 (Build Nov  9 2020/22:58:55)
-mpiP: 
-
-fitness: 574279.022394
-time: 149.867215mpiP: 
-mpiP: Storing mpiP output in [./sap.out.3.2314.1.mpiP].
-mpiP: 
